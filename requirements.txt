@@ -1,0 +1,25 @@
+# Core deep-learning stack ────────────────────────────────────────────────────
+# Install PyTorch with CUDA 12.8 support (RTX 5060 / Blackwell architecture).
+# The --index-url line in the Dockerfile handles this; here we just pin the
+# version so the environment is reproducible.
+torch==2.7.0
+torchvision==0.22.0
+torchaudio==2.7.0
+
+# Hugging Face ecosystem ───────────────────────────────────────────────────────
+transformers==4.51.3
+datasets==3.6.0
+tokenizers==0.21.1
+accelerate==1.6.0
+peft==0.15.2
+trl==0.17.0
+huggingface-hub==0.30.2
+safetensors==0.5.3
+
+# 4-bit / 8-bit quantisation ───────────────────────────────────────────────────
+bitsandbytes==0.45.5
+
+# Utilities ────────────────────────────────────────────────────────────────────
+pyyaml==6.0.2
+numpy==2.2.5
+scipy==1.15.3
