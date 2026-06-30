@@ -1,0 +1,81 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Fine-tuning configuration
+# All values can be overridden via CLI flags passed to finetune.py
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
+model:
+  # Any causal-LM on Hugging Face Hub (or a local path).
+  # TinyLlama is a good default for < 12 GB VRAM.
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+
+  # Maximum sequence length fed to the model during training.
+  max_seq_length: 2048
+
+  # Load in 4-bit (QLoRA).  Set to false to load in full bf16.
+  load_in_4bit: true
+
+  # dtype used for non-quantized layers (bfloat16 is preferred on Ampere/Ada/Blackwell).
+  torch_dtype: "bfloat16"
+
+# ---------------------------------------------------------------------------
+# LoRA / PEFT
+# ---------------------------------------------------------------------------
+lora:
+  r: 16                     # Rank of the low-rank decomposition
+  lora_alpha: 32            # Scaling factor (typically 2 × r)
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  # Modules to inject LoRA into.  "all-linear" works for most architectures.
+  target_modules: "all-linear"
+
+# ---------------------------------------------------------------------------
+# Dataset
+# ---------------------------------------------------------------------------
+dataset:
+  # Hugging Face dataset identifier (or a local path to a JSON/CSV/JSONL file).
+  name: "yahma/alpaca-cleaned"
+
+  # Column that contains the formatted prompt text.
+  # If your dataset uses a chat template instead, set this to null and provide
+  # a custom formatting function in finetune.py.
+  text_column: null          # null → uses the built-in Alpaca formatter
+
+  # Fraction of rows to keep (useful for quick smoke-tests).
+  # Set to 1.0 to use the full dataset.
+  sample_fraction: 1.0
+
+  # Train / validation split ratio (only applied when the dataset has no
+  # pre-defined validation split).
+  val_split: 0.05
+
+# ---------------------------------------------------------------------------
+# Training
+# ---------------------------------------------------------------------------
+training:
+  output_dir: "./output"
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4   # effective batch = 4 × 4 = 16
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  lr_scheduler_type: "cosine"
+  optim: "paged_adamw_8bit"        # memory-efficient optimizer from bitsandbytes
+  fp16: false
+  bf16: true                        # RTX 5060 supports bfloat16
+  logging_steps: 10
+  save_steps: 100
+  eval_steps: 100
+  save_total_limit: 2
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  report_to: "none"                 # set to "wandb" or "tensorboard" if desired
+  dataloader_num_workers: 4
+  gradient_checkpointing: true      # trades compute for memory
+  group_by_length: true             # pack sequences of similar length → fewer pad tokens

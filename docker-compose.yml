@@ -1,0 +1,45 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — convenience wrapper for the fine-tuning container
+#
+# Usage:
+#   docker compose up          # run with defaults from config.yaml
+#   docker compose run fine-tune --epochs 1 --model TinyLlama/TinyLlama-1.1B-Chat-v1.0
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  fine-tune:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fine-tune:latest
+
+    # ── GPU access ───────────────────────────────────────────────────────────
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all          # use all available GPUs; set to 1 for single-GPU
+              capabilities: [gpu]
+
+    # ── Volumes ──────────────────────────────────────────────────────────────
+    volumes:
+      # Persist trained adapters / checkpoints on the host
+      - ./output:/app/output
+      # Share the HuggingFace model cache so downloads survive container restarts
+      - huggingface-cache:/root/.cache/huggingface
+
+    # ── Environment ──────────────────────────────────────────────────────────
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TOKENIZERS_PARALLELISM=false
+      - NCCL_P2P_DISABLE=1
+      # Uncomment and set your token to access gated models (e.g. Llama):
+      # - HF_TOKEN=hf_...
+
+    # ── Interactive terminal ─────────────────────────────────────────────────
+    stdin_open: true
+    tty: true
+
+volumes:
+  huggingface-cache:
