@@ -2,7 +2,7 @@
 # Install PyTorch with CUDA 12.8 support (RTX 5060 / Blackwell architecture).
 # The --index-url line in the Dockerfile handles this; here we just pin the
 # version so the environment is reproducible.
-torch==2.7.0
+torch==2.12.1
 torchvision==0.22.0
 torchaudio==2.7.0
 
