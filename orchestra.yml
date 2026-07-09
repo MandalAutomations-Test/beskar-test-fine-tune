@@ -13,7 +13,10 @@ steps:
     # bitsandbytes 0.45.x imports Triton modules at import time, and Triton's
     # autotuner JIT-compiles a small C helper — it needs a C compiler in the
     # container or model loading dies with "Failed to find C compiler".
-    run: apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
+    # With --no-install-recommends, gcc alone pulls no libc headers (libc6-dev
+    # is only a Recommends), so the compile fails on `#include <stdlib.h>`.
+    # python3-dev covers the Python.h include in the same Triton helper.
+    run: apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev python3-dev && rm -rf /var/lib/apt/lists/*
 
   - name: Install dependencies
     run: pip install --no-cache-dir -r requirements.txt
