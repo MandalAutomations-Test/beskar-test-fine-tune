@@ -1,0 +1,62 @@
+name: beskar-test-fine-tune
+
+env:
+  # Quick-test knobs: 1 epoch over ~5% of alpaca-cleaned (~2.6k rows) keeps the
+  # run short while still passing the eval/save checkpoints at step 100.
+  EPOCHS: "1"
+  SAMPLE_FRACTION: "0.05"
+  # Where the Beskar spawner collects artifacts from the finished container.
+  OUTPUT_DIR: /scratch/workspace/artifacts
+
+steps:
+  - name: Install dependencies
+    run: pip install --no-cache-dir -r requirements.txt
+
+  - name: Show environment
+    run: |
+      python --version
+      nvidia-smi
+      python -c "import torch; print('torch', torch.__version__, 'cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"
+      echo "epochs=$EPOCHS sample_fraction=$SAMPLE_FRACTION out=$OUTPUT_DIR"
+
+  - name: Fine-tune
+    run: |
+      # finetune.py has no CLI flag for sample_fraction, so patch a run config.
+      python - <<'PY'
+      import os, yaml
+      cfg = yaml.safe_load(open("config.yaml"))
+      cfg["dataset"]["sample_fraction"] = float(os.environ["SAMPLE_FRACTION"])
+      yaml.safe_dump(cfg, open("config.run.yaml", "w"))
+      print("sample_fraction:", cfg["dataset"]["sample_fraction"])
+      PY
+      # Checkpoints + adapter go to ./output (inside the container, not shipped);
+      # only the merged model below lands in $OUTPUT_DIR.
+      python finetune.py --config config.run.yaml --epochs "$EPOCHS" --output ./output
+
+  - name: Export fine-tuned model
+    run: |
+      # Merge the LoRA adapter into the base weights and save the full model
+      # into $OUTPUT_DIR — the artifact IS the fine-tuned LLM, ready for
+      # AutoModelForCausalLM.from_pretrained().
+      python - <<'PY'
+      import os, torch, yaml
+      from peft import PeftModel
+      from transformers import AutoModelForCausalLM, AutoTokenizer
+
+      base = yaml.safe_load(open("config.yaml"))["model"]["name"]
+      dest = os.path.join(os.environ["OUTPUT_DIR"], "model")
+      print(f"merging ./output/final-adapter into {base} -> {dest}")
+
+      model = AutoModelForCausalLM.from_pretrained(base, torch_dtype=torch.bfloat16)
+      model = PeftModel.from_pretrained(model, "./output/final-adapter")
+      model = model.merge_and_unload()
+      model.save_pretrained(dest, safe_serialization=True)
+      AutoTokenizer.from_pretrained("./output/final-adapter").save_pretrained(dest)
+      PY
+
+  - name: Verify artifact
+    run: |
+      ls -lRh "$OUTPUT_DIR"
+      test -f "$OUTPUT_DIR/model/config.json"
+      ls "$OUTPUT_DIR"/model/*.safetensors
+      echo "fine-tuned model present in $OUTPUT_DIR/model"
