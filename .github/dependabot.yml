@@ -1,0 +1,60 @@
+# Dependabot configuration
+#
+# This repo pins the ML stack as a matched set (torch ⇄ torchvision/torchaudio,
+# transformers ⇄ tokenizers/trl/peft, and finetune.py is written against the
+# pinned APIs). Single-package bumps break pip resolution or the training code,
+# so:
+#   - torch/torchvision/torchaudio are never auto-bumped (each torchvision
+#     release hard-requires one exact torch version).
+#   - The Hugging Face ecosystem is grouped into one PR and never crosses a
+#     major version boundary automatically.
+# Deliberate upgrades of the stack should be done by hand, all pins at once.
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      hf-ecosystem:
+        applies-to: version-updates
+        patterns:
+          - "transformers"
+          - "tokenizers"
+          - "trl"
+          - "peft"
+          - "accelerate"
+          - "bitsandbytes"
+          - "huggingface-hub"
+          - "safetensors"
+          - "datasets"
+      hf-ecosystem-security:
+        applies-to: security-updates
+        patterns:
+          - "transformers"
+          - "tokenizers"
+          - "trl"
+          - "peft"
+          - "accelerate"
+          - "bitsandbytes"
+          - "huggingface-hub"
+          - "safetensors"
+          - "datasets"
+    ignore:
+      # torchvision/torchaudio releases require one exact torch version, so
+      # any solo bump of these three is unsatisfiable — upgrade them manually
+      # as a set.
+      - dependency-name: "torch"
+      - dependency-name: "torchvision"
+      - dependency-name: "torchaudio"
+      # finetune.py targets the transformers 4.x / trl 0.17 APIs; majors (and
+      # trl minors, which are breaking pre-1.0) need code changes.
+      - dependency-name: "transformers"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tokenizers"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "trl"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "peft"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
