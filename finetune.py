@@ -37,9 +37,8 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
-    TrainingArguments,
 )
-from trl import SFTTrainer
+from trl import SFTConfig, SFTTrainer
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -255,10 +254,10 @@ def build_lora_config(cfg: dict) -> LoraConfig:
     )
 
 
-def build_training_args(cfg: dict) -> TrainingArguments:
-    """Build HuggingFace TrainingArguments from the config."""
+def build_training_args(cfg: dict) -> SFTConfig:
+    """Build TRL's SFTConfig (a TrainingArguments subclass) from the config."""
     t = cfg["training"]
-    return TrainingArguments(
+    return SFTConfig(
         output_dir=t["output_dir"],
         num_train_epochs=t["num_train_epochs"],
         per_device_train_batch_size=t["per_device_train_batch_size"],
@@ -274,7 +273,7 @@ def build_training_args(cfg: dict) -> TrainingArguments:
         logging_steps=t["logging_steps"],
         save_steps=t["save_steps"],
         eval_steps=t["eval_steps"],
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         save_strategy="steps",
         save_total_limit=t["save_total_limit"],
         load_best_model_at_end=t["load_best_model_at_end"],
@@ -285,6 +284,9 @@ def build_training_args(cfg: dict) -> TrainingArguments:
         gradient_checkpointing=t.get("gradient_checkpointing", True),
         group_by_length=t.get("group_by_length", True),
         remove_unused_columns=False,
+        dataset_text_field="text",
+        max_length=cfg["model"].get("max_seq_length", 2048),
+        packing=False,
     )
 
 
@@ -351,10 +353,7 @@ def main() -> None:
         args=training_args,
         train_dataset=datasets["train"],
         eval_dataset=datasets["validation"],
-        tokenizer=tokenizer,
-        dataset_text_field="text",
-        max_seq_length=cfg["model"].get("max_seq_length", 2048),
-        packing=False,
+        processing_class=tokenizer,
     )
 
     logger.info("Starting training …")
