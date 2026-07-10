@@ -9,7 +9,7 @@
 model:
   # Any causal-LM on Hugging Face Hub (or a local path).
   # TinyLlama is a good default for < 12 GB VRAM.
-  name: "google/gemma-4-E2B-it"
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
   # Maximum sequence length fed to the model during training.
   max_seq_length: 2048
