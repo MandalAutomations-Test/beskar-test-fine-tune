@@ -18,7 +18,7 @@
 
 # CUDA 12.8 + cuDNN 9 on Ubuntu 22.04
 # RTX 5060 (Blackwell) requires CUDA ≥ 12.8 and compute capability sm_120.
-FROM nvidia/cuda:12.8.1-cudnn9-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
 
 # ── System dependencies ───────────────────────────────────────────────────────
 ENV DEBIAN_FRONTEND=noninteractive
