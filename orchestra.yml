@@ -7,6 +7,10 @@ env:
   SAMPLE_FRACTION: "0.05"
   # Where the Beskar spawner collects artifacts from the finished container.
   OUTPUT_DIR: /scratch/workspace/artifacts
+  # The container's DNS can't resolve the HF xet CAS host (transfer.xethub.hf.co),
+  # so weight downloads via hf_xet die with "Temporary failure in name resolution".
+  # Disabling xet makes huggingface_hub fall back to plain HTTPS from the CDN.
+  HF_HUB_DISABLE_XET: "1"
 
 steps:
   - name: Install build tools
