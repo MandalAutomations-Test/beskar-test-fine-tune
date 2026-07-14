@@ -9,7 +9,11 @@ env:
   OUTPUT_DIR: /scratch/workspace/artifacts
   # The container's DNS can't resolve the HF xet CAS host (transfer.xethub.hf.co),
   # so weight downloads via hf_xet die with "Temporary failure in name resolution".
-  # Disabling xet makes huggingface_hub fall back to plain HTTPS from the CDN.
+  # NOTE: this env var is a no-op on the pinned huggingface-hub 0.30.2 (support
+  # landed in 0.32.0) — 0.30.x uses xet whenever hf_xet is importable. The real
+  # fix is keeping hf_xet uninstalled (see requirements.txt and the uninstall in
+  # the Install dependencies step); this stays as a belt-and-braces guard for a
+  # future huggingface-hub bump.
   HF_HUB_DISABLE_XET: "1"
 
 steps:
@@ -23,7 +27,12 @@ steps:
     run: apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev python3-dev && rm -rf /var/lib/apt/lists/*
 
   - name: Install dependencies
-    run: pip install --no-cache-dir -r requirements.txt
+    # Uninstall hf_xet in case the worker image ships it: huggingface-hub 0.30.x
+    # routes downloads through xet whenever the package is importable, and the
+    # container's DNS can't reach the xet CAS hosts.
+    run: |
+      pip install --no-cache-dir -r requirements.txt
+      pip uninstall -y hf_xet || true
 
   - name: Show environment
     run: |
