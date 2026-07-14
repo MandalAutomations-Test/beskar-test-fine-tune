@@ -14,7 +14,10 @@ accelerate==1.6.0
 peft==0.15.2
 trl==0.17.0
 huggingface-hub==0.30.2
-hf_xet==1.1.5
+# hf_xet is deliberately NOT installed: the GPU worker's DNS cannot resolve the
+# Xet CAS hosts (transfer.xethub.hf.co), and huggingface-hub 0.30.x has no
+# HF_HUB_DISABLE_XET switch — it uses xet whenever the package is importable.
+# Without hf_xet, downloads fall back to plain HTTPS from the CDN.
 safetensors==0.5.3
 
 # 4-bit / 8-bit quantisation ───────────────────────────────────────────────────
