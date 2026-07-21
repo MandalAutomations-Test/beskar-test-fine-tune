@@ -7,7 +7,7 @@ torchvision==0.22.0
 torchaudio==2.7.0
 
 # Hugging Face ecosystem ───────────────────────────────────────────────────────
-transformers==4.51.3
+transformers==5.5.0
 datasets==3.6.0
 tokenizers==0.21.1
 accelerate==1.6.0
